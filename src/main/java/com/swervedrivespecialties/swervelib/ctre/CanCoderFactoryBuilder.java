@@ -29,9 +29,12 @@ public class CanCoderFactoryBuilder {
             config.sensorDirection = direction == Direction.CLOCKWISE;
 
             CANCoder encoder = new CANCoder(configuration.getId());
+			DutyCycleEncoder enc;
             CtreUtils.checkCtreError(encoder.configAllSettings(config, 250), "Failed to configure CANCoder");
 
             CtreUtils.checkCtreError(encoder.setStatusFramePeriod(CANCoderStatusFrame.SensorData, periodMilliseconds, 250), "Failed to configure CANCoder update rate");
+		
+			
 
             return new EncoderImplementation(encoder);
         };
@@ -40,13 +43,15 @@ public class CanCoderFactoryBuilder {
     private static class EncoderImplementation implements AbsoluteEncoder {
         private final CANCoder encoder;
 
-        private EncoderImplementation(CANCoder encoder) {
-            this.encoder = encoder;
+        private EncoderImplementation(CANCoder encoderSet) {
+            this.encoder = encoderSet;
+			this.enc = new DutyCycleEncoder(encoder.getDeviceID());
+			
         }
 
         @Override
         public double getAbsoluteAngle() {
-            double angle = Math.toRadians(encoder.getAbsolutePosition());
+            double angle = Math.toRadians((enc.getAbsolutePosition() * 360.0) / 4096.0);
             angle %= 2.0 * Math.PI;
             if (angle < 0.0) {
                 angle += 2.0 * Math.PI;
